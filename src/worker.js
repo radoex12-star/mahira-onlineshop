@@ -4,7 +4,7 @@
 //
 // Cloudflare secrets / variables:
 // SUPABASE_URL
-// SUPABASE_SERVICE_KEY (new Supabase sb_secret_ key)
+// SUPABASE_SERVICE_KEY (Supabase sb_secret_ key)
 // ADMIN_KEY
 // RIDER_KEY (optional)
 // ISSUER_KEY (optional)
@@ -18,13 +18,32 @@ const json = (data, status = 200) =>
     },
   });
 
-async function sb(env, path, { method = 'GET', body, prefer } = {}) {
-  const res = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/${path}`,
+// ---------- SUPABASE CONNECTION ----------
+
+async function sb(env, path, options = {}) {
+  const {
+    method = 'GET',
+    body,
+    prefer,
+  } = options;
+
+  if (!env.SUPABASE_URL) {
+    throw new Error('SUPABASE_URL is missing from Worker environment.');
+  }
+
+  if (!env.SUPABASE_SERVICE_KEY) {
+    throw new Error('SUPABASE_SERVICE_KEY is missing from Worker environment.');
+  }
+
+  const baseUrl = env.SUPABASE_URL.replace(/\/+$/, '');
+  const cleanPath = String(path).replace(/^\/+/, '');
+
+  const response = await fetch(
+    `${baseUrl}/rest/v1/${cleanPath}`,
     {
       method,
       headers: {
-        // Supabase new secret keys belong in apikey only.
+        // Supabase sb_secret_ keys are sent through apikey.
         apikey: env.SUPABASE_SERVICE_KEY,
         'content-type': 'application/json',
         ...(prefer ? { Prefer: prefer } : {}),
@@ -33,19 +52,22 @@ async function sb(env, path, { method = 'GET', body, prefer } = {}) {
     }
   );
 
-  const text = await res.text();
+  const responseText = await response.text();
+
   let data = null;
 
   try {
-    data = text ? JSON.parse(text) : null;
+    data = responseText ? JSON.parse(responseText) : null;
   } catch {
-    data = text;
+    data = responseText;
   }
 
-  if (!res.ok) {
+  if (!response.ok) {
     throw new Error(
-      `Supabase ${res.status}: ${
-        typeof data === 'string' ? data : JSON.stringify(data)
+      `Supabase HTTP ${response.status}: ${
+        typeof data === 'string'
+          ? data
+          : JSON.stringify(data)
       }`
     );
   }
@@ -53,7 +75,10 @@ async function sb(env, path, { method = 'GET', body, prefer } = {}) {
   return data;
 }
 
+// ---------- CONSTANTS ----------
+
 const BRANDS = ['ola', 'afrigas', 'seagas'];
+
 const STATUSES = [
   'in_progress',
   'on_the_way',
@@ -93,7 +118,8 @@ function randomCode() {
   );
 }
 
-// Creates discount codes.
+// ---------- DISCOUNT CODES ----------
+
 async function createCodes(env, b) {
   const amount =
     Number.isInteger(b.amount) && b.amount > 0 && b.amount <= 5000
@@ -146,7 +172,8 @@ const codeErrorText = {
   code_expired: 'That code has expired.',
 };
 
-// Only show an offer while it is running.
+// ---------- PUBLIC PRODUCT DATA ----------
+
 function publicProduct(p) {
   const live =
     p.promo_price != null &&
@@ -165,6 +192,8 @@ function publicProduct(p) {
 
 const ORDER_COLS =
   'id,status,customer_name,phone,brand,total,payment_method,paid,products(label)';
+
+// ---------- API ROUTES ----------
 
 async function handleApi(request, env, url) {
   const route = url.pathname;
@@ -298,8 +327,7 @@ async function handleApi(request, env, url) {
     return json(result);
   }
 
-  // Customer order tracking.
-  // GET /api/track?t=<token>
+  // ---------- CUSTOMER ORDER TRACKING ----------
 
   if (route === '/api/track' && method === 'GET') {
     const t = url.searchParams.get('t') || '';
@@ -334,7 +362,7 @@ async function handleApi(request, env, url) {
     });
   }
 
-  // Rider/admin scanner.
+  // ---------- RIDER / ADMIN SCANNER ----------
 
   if (route === '/api/scan' && method === 'POST') {
     const k =
@@ -433,7 +461,7 @@ async function handleApi(request, env, url) {
     });
   }
 
-  // Main system: create discount codes.
+  // ---------- ISSUE DISCOUNT CODES ----------
 
   if (route === '/api/issue-code' && method === 'POST') {
     const key = request.headers.get('x-issuer-key') || '';
@@ -644,8 +672,11 @@ export default {
       try {
         return await handleApi(request, env, url);
       } catch (e) {
-        // Detailed error is available in Cloudflare Worker logs.
-        console.error('MAHIRA API ERROR:', e);
+        console.error(
+          'MAHIRA API ERROR:',
+          e?.message || String(e),
+          e?.stack || ''
+        );
 
         return json({
           error: 'Something went wrong. Please try again.',
