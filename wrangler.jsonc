@@ -1,9 +1,16 @@
 
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "mahira-onlineshop",
+  "main": "./src/worker.js",
   "compatibility_date": "2026-11-22",
-  "main": "_worker.js",
+  "assets": {
+    "directory": "./mahira-site",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*"
+    ]
+  },
   "vars": {
     "SUPABASE_URL": "https://mzdczcengkuxgtgajrja.supabase.co"
   }
