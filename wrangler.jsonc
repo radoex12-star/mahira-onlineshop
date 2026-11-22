@@ -4,6 +4,7 @@
   "name": "mahira-onlineshop",
   "main": "./src/worker.js",
   "compatibility_date": "2026-11-22",
+  "keep_vars": true,
   "assets": {
     "directory": "./mahira-site",
     "binding": "ASSETS",
