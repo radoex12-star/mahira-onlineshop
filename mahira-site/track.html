@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Track your order — Mahira Fuels</title>
+<meta name="theme-color" content="#de0f11">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .thanks{background:#fff;border:2px solid var(--yellow);border-radius:16px;padding:14px;text-align:center;margin-bottom:14px;display:none}
+  .thanks h1{margin:0;font-size:22px;color:var(--green)}
+  .big{font-size:26px;font-weight:900;margin:2px 0}
+  .status{text-align:center;font-size:20px;font-weight:900;margin:2px 0 14px}
+  .status small{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px}
+  .steps{display:flex;justify-content:space-between;position:relative;margin:6px 4px 4px}
+  .steps:before{content:"";position:absolute;left:12%;right:12%;top:15px;height:4px;background:var(--line);z-index:0}
+  .step{flex:1;text-align:center;position:relative;z-index:1;font-size:13px;font-weight:700;color:var(--muted)}
+  .dot{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--line);margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-weight:900}
+  .step.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+  .step.done{color:var(--ink)}
+  .step.now .dot{background:var(--yellow);border-color:var(--red);color:#1c1c1c;animation:flash 1.3s ease-in-out infinite}
+  .step.now{color:var(--red)}
+  .step small{display:block;font-weight:600;color:var(--muted);font-size:11px}
+  .cancelled{background:#fff0f0;border:2px solid var(--red);border-radius:14px;padding:14px;text-align:center;font-weight:800;color:var(--red)}
+  .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border:0}
+  #qr{display:flex;justify-content:center;margin:8px 0}
+  .center{text-align:center}
+  .muted{color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><a href="/"><img src="/logo.png" alt="Mahira Fuels"></a></header>
+
+  <div class="thanks" id="thanks"><h1>Order received!</h1><div>Thank you for choosing <b>MAHIRA FUELS</b>.</div></div>
+
+  <div class="card" id="main"><div class="center muted">Loading your order…</div></div>
+
+  <div class="card center" id="qrCard" style="display:none">
+    <b>Delivery code</b>
+    <div id="qr"></div>
+    <div class="muted">Show this to our rider when your gas arrives. They scan it to confirm delivery.</div>
+  </div>
+
+  <div class="muted center">Bookmark this page to follow your order. It updates by itself.<br>
+    <a href="/" style="color:var(--red);font-weight:700">Order again</a></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ksh = (n) => 'KSh ' + Number(n).toLocaleString('en-KE');
+const T = new URLSearchParams(location.search).get('t') || '';
+const time = (d) => d ? new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+let qrDone = false;
+
+if (new URLSearchParams(location.search).get('new')) $('thanks').style.display = 'block';
+
+function render(o){
+  const rank = { in_progress:1, on_the_way:2, delivered:3 }[o.status] || 0;
+  const titles = {
+    in_progress:['In progress','We have your order and are preparing your gas.'],
+    on_the_way:['On the way','Our rider is bringing your gas. Keep your phone near.'],
+    delivered:['Delivered','Your gas has been delivered. Thank you!'],
+    cancelled:['Cancelled','This order was cancelled.'],
+  }[o.status];
+  const step = (n, label, t) => `<div class="step ${rank>n?'done':rank===n?'now':''}"><div class="dot">${rank>n?'✓':n}</div>${label}<small>${t||'&nbsp;'}</small></div>`;
+
+  let pay;
+  if (o.payment_method === 'mpesa') pay = o.paid ? 'M-PESA — payment confirmed' : 'M-PESA — we are confirming your payment';
+  else pay = o.paid ? 'Cash — received' : 'Cash — pay ' + ksh(o.total) + ' on delivery';
+
+  $('main').innerHTML =
+    `<div class="center muted">Order #${o.id}${o.name ? ' · ' + esc(o.name) : ''}</div>` +
+    `<div class="status">${titles[0]}<small>${titles[1]}</small></div>` +
+    (o.status === 'cancelled' ? '<div class="cancelled">Order cancelled</div>' :
+      `<div class="steps">${step(1,'In progress',time(o.created_at))}${step(2,'On the way',time(o.on_the_way_at))}${step(3,'Delivered',time(o.delivered_at))}</div>`) +
+    `<div style="margin-top:14px">
+       <div class="row"><span>Gas</span><b>${esc(o.label)}</b></div>
+       ${o.discount ? `<div class="row"><span>Discount code</span><b style="color:var(--green)">−${ksh(o.discount)}</b></div>` : ''}
+       <div class="row"><span>Total</span><b>${ksh(o.total)}</b></div>
+       <div class="row"><span>Payment</span><b style="text-align:right">${pay}</b></div>
+     </div>`;
+
+  const showQR = o.status === 'in_progress' || o.status === 'on_the_way';
+  $('qrCard').style.display = showQR ? 'block' : 'none';
+  if (showQR && !qrDone && window.QRCode){
+    qrDone = true;
+    new QRCode($('qr'),{text: location.origin + '/track.html?t=' + T, width:170, height:170, correctLevel: QRCode.CorrectLevel.M});
+  }
+}
+
+async function load(){
+  if (!/^[a-f0-9]{20}$/.test(T)){ $('main').innerHTML = '<div class="center bad msg">This tracking link is not valid.</div>'; return; }
+  try{
+    const r = await fetch('/api/track?t=' + T);
+    const d = await r.json();
+    if (!r.ok){ $('main').innerHTML = '<div class="center bad msg">' + esc(d.error || 'Order not found.') + '</div>'; return; }
+    render(d);
+    try{ localStorage.setItem('mf_last', T); }catch(e){}   // so the shop page can offer "track my order"
+    if (d.status === 'delivered' || d.status === 'cancelled') clearInterval(timer);
+  }catch(e){ /* keep what is on screen */ }
+}
+const timer = setInterval(load, 15000);
+load();
+</script>
+</body>
+</html>

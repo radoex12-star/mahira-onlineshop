@@ -1,0 +1,34 @@
+/* MAHIRA FUELS — shared look, colours taken from the logo */
+:root{
+  --red:#de0f11; --red-dark:#a80a0c; --yellow:#fed323; --yellow-soft:#fff4c2;
+  --green:#168a35; --ink:#1c1c1c; --muted:#6b6b6b; --line:#ecdcd0; --cream:#fff6e8;
+}
+*{box-sizing:border-box}
+html{background:var(--cream)}
+body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);line-height:1.4;
+  background:linear-gradient(180deg,#e81011 0,#db0d0f 150px,var(--cream) 150px) no-repeat var(--cream)}
+.wrap{max-width:480px;margin:0 auto;padding:0 16px 40px}
+header{text-align:center;padding:12px 0 14px}
+header img{display:block;width:100%;max-width:400px;height:auto;margin:0 auto;border-radius:14px;box-shadow:0 3px 10px rgba(90,0,0,.25)}
+
+section,.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(120,30,0,.06)}
+h2{margin:0 0 12px;font-size:16px}
+h2 span{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:var(--red);color:#fff;border-radius:50%;font-size:13px;margin-right:8px}
+
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 4px}
+label.first{margin-top:0}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+input,select,textarea{font:inherit;width:100%;padding:13px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
+
+.btn{border:0;border-radius:12px;padding:13px 18px;font:inherit;font-weight:800;cursor:pointer;color:#fff;background:var(--red)}
+.btn:hover{background:var(--red-dark)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.big{width:100%;font-size:18px;padding:16px}
+.btn.dark{background:#2b2b2b} .btn.green{background:var(--green)} .btn.small{padding:6px 11px;font-size:13px;border-radius:9px}
+.msg{font-size:14px;font-weight:700;margin-top:8px}
+.ok{color:var(--green)} .bad{color:var(--red)}
+
+@keyframes flash{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.03)}}
+.flash{animation:flash 1.1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.flash{animation:none}}

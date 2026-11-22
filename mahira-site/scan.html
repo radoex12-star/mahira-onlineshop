@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Mahira Fuels — Rider scanner</title>
+<meta name="theme-color" content="#de0f11">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .modes button{border:3px solid var(--line);border-radius:14px;padding:14px 6px;font:inherit;font-weight:900;cursor:pointer;background:#fff;color:var(--ink);font-size:16px}
+  .modes button.on{border-color:var(--red);background:#fff4f4}
+  .modes button.on.del{border-color:var(--green);background:#eaf8ed}
+  video{width:100%;border-radius:14px;background:#000;display:block}
+  .frame{position:relative}
+  .frame:after{content:"";position:absolute;inset:18% 18%;border:3px solid var(--yellow);border-radius:14px;pointer-events:none}
+  .result{border-radius:16px;padding:16px;margin-top:12px;text-align:center;display:none}
+  .result.good{background:#eaf8ed;border:3px solid var(--green)}
+  .result.badr{background:#fff0f0;border:3px solid var(--red)}
+  .result h2{margin:0 0 4px;font-size:22px}
+  .collect{background:var(--yellow);color:#1c1c1c;border-radius:12px;padding:10px;font-weight:900;font-size:22px;margin-top:10px}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><img src="/logo.png" alt="Mahira Fuels"></header>
+
+  <div class="card" id="login">
+    <h2>Rider key</h2>
+    <input type="password" id="key" placeholder="Enter the key you were given">
+    <button class="btn big" id="loginBtn" style="margin-top:10px">Open scanner</button>
+    <div class="msg bad" id="loginMsg"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="modes">
+      <button id="mWay" class="on">🛵 On the way</button>
+      <button id="mDel" class="del">✅ Delivered</button>
+    </div>
+    <div class="card">
+      <div class="frame"><video id="video" playsinline muted></video></div>
+      <div class="hint" id="camMsg" style="text-align:center;margin-top:8px">Point the camera at the customer's delivery QR code.</div>
+      <button class="btn dark" id="camBtn" style="width:100%;margin-top:8px">Start camera</button>
+    </div>
+    <div class="result" id="result"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ksh = (n) => 'KSh ' + Number(n).toLocaleString('en-KE');
+let KEY = sessionStorage.getItem('mf_rider') || '';
+let mode = 'on_the_way', stream = null, timer = null, busy = false, lastTok = '', lastAt = 0, detector = null;
+const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', {willReadFrequently:true});
+
+function setMode(m){
+  mode = m;
+  $('mWay').classList.toggle('on', m==='on_the_way');
+  $('mDel').classList.toggle('on', m==='delivered');
+}
+$('mWay').onclick = () => setMode('on_the_way');
+$('mDel').onclick = () => setMode('delivered');
+
+async function login(){
+  KEY = $('key').value || KEY;
+  // A harmless scan of an invalid code tells us whether the key works (401 = wrong key).
+  const r = await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json','x-rider-key':KEY},body:JSON.stringify({token:'x',status:'delivered'})});
+  if (r.status === 401){ $('loginMsg').textContent = 'Wrong key.'; return; }
+  sessionStorage.setItem('mf_rider', KEY);
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+}
+
+function show(good, html){
+  const r = $('result');
+  r.className = 'result ' + (good ? 'good' : 'badr');
+  r.style.display = 'block';
+  r.innerHTML = html;
+  if (navigator.vibrate) navigator.vibrate(good ? 120 : [80,60,80]);
+}
+
+async function handle(raw){
+  if (busy) return;
+  let tok = raw; try{ tok = new URL(raw).searchParams.get('t') || raw; }catch{}
+  if (tok === lastTok && Date.now() - lastAt < 6000) return;   // ignore the same QR for a few seconds
+  busy = true; lastTok = tok; lastAt = Date.now();
+  try{
+    const r = await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json','x-rider-key':KEY},body:JSON.stringify({token:raw, status:mode})});
+    const d = await r.json();
+    const o = d.order;
+    const who = o ? `<div><b>${esc(o.name || 'Customer')}</b> · ${esc(o.label)} · ${ksh(o.total)}</div>
+                     <div style="margin-top:6px"><a href="tel:+${esc(o.phone)}" style="color:var(--red);font-weight:900;font-size:20px">📞 ${esc(o.phone)}</a>
+                     <div class="hint">Call this number for directions</div></div>` : '';
+    if (d.ok){
+      show(true, `<h2>${mode==='delivered' ? '✅ Delivered' : '🛵 On the way'} — order #${o.id}</h2>${who}` +
+        (d.collect ? `<div class="collect">Collect ${ksh(d.collect)} cash</div>` : (mode==='delivered' ? '<div class="hint" style="margin-top:8px">Nothing to collect — already paid.</div>' : '')));
+    }else{
+      show(false, `<h2>⚠️ ${esc(d.error || 'Could not update')}</h2>${who}`);
+    }
+  }catch(e){ show(false, '<h2>⚠️ Network problem</h2><div>Check your data and scan again.</div>'); }
+  busy = false;
+}
+
+async function tick(){
+  const v = $('video');
+  if (!stream || v.readyState < 2) return;
+  try{
+    if (detector){
+      const codes = await detector.detect(v);
+      if (codes.length) handle(codes[0].rawValue);
+    }else if (window.jsQR){
+      canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+      ctx.drawImage(v, 0, 0);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const c = jsQR(img.data, img.width, img.height);
+      if (c && c.data) handle(c.data);
+    }
+  }catch(e){}
+}
+
+async function toggleCam(){
+  if (stream){
+    clearInterval(timer); stream.getTracks().forEach(t => t.stop()); stream = null;
+    $('camBtn').textContent = 'Start camera'; return;
+  }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v = $('video'); v.srcObject = stream; await v.play();
+    if ('BarcodeDetector' in window) detector = new BarcodeDetector({formats:['qr_code']});
+    timer = setInterval(tick, 350);
+    $('camBtn').textContent = 'Stop camera';
+  }catch(e){ $('camMsg').textContent = 'Could not open the camera. Allow camera access in your browser and try again.'; $('camMsg').className = 'hint bad'; }
+}
+
+$('camBtn').onclick = toggleCam;
+$('loginBtn').onclick = login;
+$('key').addEventListener('keydown', e => { if (e.key==='Enter') login(); });
+if (KEY) login();
+</script>
+</body>
+</html>

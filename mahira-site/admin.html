@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Mahira Fuels — Admin</title>
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+  body{background:#f6f1ea}
+  .wrap{max-width:980px}
+  .top{background:linear-gradient(90deg,#e81011,#db0d0f);margin:0 -16px 12px;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .top img{height:46px;width:auto}
+  .top a{color:#fff;font-weight:700;font-size:14px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .tabs button{background:#fff;border:2px solid var(--line);border-radius:10px;padding:9px 14px;font:inherit;font-weight:800;cursor:pointer;color:var(--ink)}
+  .tabs button.on{background:var(--red);border-color:var(--red);color:#fff}
+  .tabs .badge{background:var(--yellow);color:#1c1c1c;border-radius:99px;padding:0 7px;margin-left:4px;font-size:12px}
+  .pane{display:none}.pane.on{display:block}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid #eee;vertical-align:middle}
+  th{font-size:12px;color:var(--muted)}
+  .scroll{overflow-x:auto}
+  .grid{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+  .grid>div{flex:1;min-width:110px}
+  .pill{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap}
+  .in_progress{background:var(--yellow-soft)}.on_the_way{background:#dbe9ff}.delivered{background:#d6f5db}.cancelled{background:#eee;color:#777}
+  .paidtag{font-size:12px;font-weight:800}
+  .qrgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:12px}
+  .qrcard{border:2px solid var(--yellow);border-radius:12px;padding:10px;text-align:center;background:#fff;break-inside:avoid}
+  .qrcard .code{font-weight:900;letter-spacing:1px;margin:6px 0 2px}
+  .qrcard .who{font-weight:800;color:var(--red)}
+  .qrcard small{display:block;color:#666;word-break:break-all}
+  .qrcard .qr{display:flex;justify-content:center}
+  .offerNow{font-size:12px;font-weight:800;color:var(--red)}
+  .hidden{display:none!important}
+  @media print{ body{background:#fff} .noprint{display:none!important} .card{box-shadow:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top noprint"><img src="/logo.png" alt="Mahira Fuels"><div><a href="/scan.html">Rider scanner</a> &nbsp; <a href="/">View shop</a></div></div>
+
+  <div class="card" id="login">
+    <h2>Admin key</h2>
+    <div class="grid"><div><input type="password" id="key" placeholder="Enter your admin key"></div><div style="flex:0"><button class="btn" id="loginBtn">Open</button></div></div>
+    <div class="msg bad" id="loginMsg"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="tabs noprint" id="tabs">
+      <button data-t="orders" class="on">Orders <span class="badge" id="newCount">0</span></button>
+      <button data-t="stock">Stock &amp; offers</button>
+      <button data-t="codes">Discount codes</button>
+      <button data-t="customers">Customers</button>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="pane on" id="p-orders">
+      <div class="card">
+        <h2>Orders <button class="btn dark small" id="refreshOrders" type="button">Refresh</button> <span class="hint" id="lastRefresh"></span></h2>
+        <div class="scroll"><table id="ordTbl"><thead><tr><th>#</th><th>Time</th><th>Customer</th><th>Gas</th><th>Total</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- STOCK & OFFERS -->
+    <div class="pane" id="p-stock">
+      <div class="card">
+        <h2>Stock &amp; prices</h2>
+        <div class="scroll"><table id="stockTbl"><thead><tr><th>Brand</th><th>Stock</th><th>Price (KSh)</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>Flashing offers</h2>
+        <div class="hint" style="margin:-6px 0 8px">An offer shows a flashing banner and the new price on the shop page. Customers also get their discount code on top.</div>
+        <div class="scroll"><table id="offerTbl"><thead><tr><th>Brand</th><th>Offer price</th><th>Label</th><th>Hours (blank = until I stop it)</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- CODES -->
+    <div class="pane" id="p-codes">
+      <div class="card noprint">
+        <h2>Create discount QR codes</h2>
+        <div class="grid">
+          <div><label class="first">Discount (KSh)</label><input type="number" id="amount" value="50" min="1"></div>
+          <div><label class="first">Valid for (days)</label><input type="number" id="days" value="30" min="1"></div>
+          <div><label class="first">How many (if no names)</label><input type="number" id="count" value="5" min="1" max="200"></div>
+        </div>
+        <label>Customer names, one per line (optional: gives personal "Hurrah, James!" links)</label>
+        <textarea id="names" rows="4" placeholder="James&#10;Mary&#10;Otieno"></textarea>
+        <div style="margin-top:10px"><button class="btn" id="genBtn">Create</button> <button class="btn dark" id="printBtn" type="button">Print QR sheet</button></div>
+        <div class="msg" id="genMsg"></div>
+      </div>
+      <div class="card" id="qrCard" style="display:none"><h2>New codes</h2><div class="qrgrid" id="qrgrid"></div></div>
+      <div class="card noprint">
+        <h2>Recent codes</h2>
+        <div class="scroll"><table id="codeTbl"><thead><tr><th>Code</th><th>For</th><th>KSh</th><th>Expires</th><th>Used</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div class="pane" id="p-customers">
+      <div class="card">
+        <h2>Customers</h2>
+        <label class="first" style="display:flex;gap:8px;align-items:center;font-weight:700"><input type="checkbox" id="dueOnly" style="width:auto"> Only customers who have not ordered for 30+ days</label>
+        <div class="scroll" style="margin-top:8px"><table id="custTbl"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Spent</th><th>Last order</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ksh = (n) => 'KSh ' + Number(n).toLocaleString('en-KE');
+const LABEL = { in_progress:'In progress', on_the_way:'On the way', delivered:'Delivered', cancelled:'Cancelled' };
+let KEY = sessionStorage.getItem('mf_admin') || '';
+let CUSTOMERS = [];
+
+async function api(path, method='GET', body){
+  const r = await fetch('/api/admin/'+path,{method,headers:{'content-type':'application/json','x-admin-key':KEY},body:body?JSON.stringify(body):undefined});
+  const d = await r.json().catch(()=>({}));
+  if (r.status===401) throw new Error('Wrong admin key.');
+  if (!r.ok) throw new Error(d.error || 'Request failed');
+  return d;
+}
+
+async function login(){
+  KEY = $('key').value || KEY;
+  try{
+    await api('stock');
+    sessionStorage.setItem('mf_admin', KEY);
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    loadAll();
+  }catch(e){ $('loginMsg').textContent = e.message; }
+}
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x===b));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id==='p-'+b.dataset.t));
+});
+
+/* ---------- Orders ---------- */
+async function loadOrders(){
+  const {orders} = await api('orders');
+  const open = orders.filter(o => o.status==='in_progress').length;
+  $('newCount').textContent = open;
+  document.title = (open ? '('+open+') ' : '') + 'Mahira Fuels — Admin';
+  $('lastRefresh').textContent = 'updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  $('ordTbl').tBodies[0].innerHTML = orders.map(o => {
+    let act = '';
+    if (o.status==='in_progress') act += `<button class="btn small" onclick="setStatus(${o.id},'on_the_way')">On the way</button> `;
+    if (o.status==='on_the_way')  act += `<button class="btn green small" onclick="setStatus(${o.id},'delivered')">Delivered</button> `;
+    if (o.status==='in_progress' || o.status==='on_the_way') act += `<button class="btn dark small" onclick="cancelOrder(${o.id})">Cancel</button>`;
+    const pay = `${esc(o.payment_method)}${o.mpesa_ref?'<br><small>'+esc(o.mpesa_ref)+'</small>':''}<br>` +
+      (o.paid ? '<span class="paidtag" style="color:var(--green)">PAID</span>'
+              : `<button class="btn small" style="background:var(--yellow);color:#1c1c1c" onclick="markPaid(${o.id})">Mark paid</button>`);
+    return `<tr><td>${o.id}</td>
+      <td>${new Date(o.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${esc(o.customer_name)}<br><a href="tel:+${esc(o.phone)}">${esc(o.phone)}</a></td>
+      <td>${esc(o.brand)}</td>
+      <td><b>${ksh(o.total)}</b>${o.discount?'<br><small>code −'+o.discount+' ('+esc(o.code)+')</small>':''}</td>
+      <td>${pay}</td>
+      <td><span class="pill ${o.status}">${LABEL[o.status]}</span></td><td>${act}</td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="hint">No orders yet.</td></tr>';
+}
+async function setStatus(id, status){ const r = await api('orders/status','POST',{id,status}); if(!r.ok) alert('Could not update: '+(r.error||'')); loadAll(); }
+async function cancelOrder(id){ if(confirm('Cancel order #'+id+'? The gas goes back in stock and the discount code is given back.')) setStatus(id,'cancelled'); }
+async function markPaid(id){ await api('orders/paid','POST',{id}); loadOrders(); }
+
+/* ---------- Stock & offers ---------- */
+async function loadStock(){
+  const {products} = await api('stock');
+  $('stockTbl').tBodies[0].innerHTML = products.map(p => `<tr>
+    <td>${esc(p.label)}</td>
+    <td><input type="number" min="0" value="${p.stock}" id="st_${p.brand}" style="width:90px"></td>
+    <td><input type="number" min="0" value="${p.price}" id="pr_${p.brand}" style="width:100px"></td>
+    <td><button class="btn small" onclick="saveStock('${p.brand}')">Save</button></td></tr>`).join('');
+  $('offerTbl').tBodies[0].innerHTML = products.map(p => {
+    const live = p.promo_price != null && (!p.promo_until || new Date(p.promo_until) > new Date());
+    return `<tr><td>${esc(p.label)}${live?'<div class="offerNow">OFFER LIVE'+(p.promo_until?' until '+new Date(p.promo_until).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'')+'</div>':''}</td>
+      <td><input type="number" min="0" id="op_${p.brand}" value="${live?p.promo_price:''}" placeholder="${p.price - 200}" style="width:110px"></td>
+      <td><input id="ol_${p.brand}" value="${esc(live?p.promo_label:'')}" placeholder="Weekend offer" style="width:150px"></td>
+      <td><input type="number" min="1" id="oh_${p.brand}" placeholder="e.g. 24" style="width:90px"></td>
+      <td><button class="btn small" onclick="startOffer('${p.brand}')">Start / update</button> ${live?`<button class="btn dark small" onclick="stopOffer('${p.brand}')">Stop</button>`:''}</td></tr>`;
+  }).join('');
+}
+async function saveStock(brand){
+  try{ await api('stock','POST',{brand, stock:parseInt($('st_'+brand).value,10), price:parseInt($('pr_'+brand).value,10)}); loadStock(); }catch(e){ alert(e.message); }
+}
+async function startOffer(brand){
+  const price = parseInt($('op_'+brand).value,10);
+  if (!(price >= 0)) return alert('Enter the offer price first.');
+  try{ await api('stock','POST',{brand, promo:{price, label:$('ol_'+brand).value, hours:parseFloat($('oh_'+brand).value)||0}}); loadStock(); }catch(e){ alert(e.message); }
+}
+async function stopOffer(brand){ await api('stock','POST',{brand, promo:null}); loadStock(); }
+
+/* ---------- Codes ---------- */
+async function loadCodes(){
+  const {codes} = await api('codes');
+  $('codeTbl').tBodies[0].innerHTML = codes.map(c => `<tr><td>${esc(c.code)}</td><td>${esc(c.customer_name||'')}</td><td>${c.amount}</td>
+    <td>${new Date(c.expires_at).toLocaleDateString('en-GB')}</td><td>${c.used_at?new Date(c.used_at).toLocaleDateString('en-GB'):'—'}</td></tr>`).join('');
+}
+const linkFor = (code) => location.origin + '/?code=' + encodeURIComponent(code);
+const waText = (c) => `${c.customer_name ? 'Hurrah, '+c.customer_name+'! ' : ''}Mahira Fuels has a KSh ${c.amount} discount on your next gas refill. Order here: ${linkFor(c.code)}`;
+
+async function generate(){
+  const names = $('names').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  $('genMsg').textContent = 'Creating…';
+  try{
+    const d = await api('codes','POST',{amount:parseInt($('amount').value,10), days:parseInt($('days').value,10), count:parseInt($('count').value,10), names});
+    $('genMsg').textContent = d.codes.length + ' codes created.';
+    const grid = $('qrgrid'); grid.innerHTML = '';
+    for (const c of d.codes){
+      const el = document.createElement('div'); el.className='qrcard';
+      el.innerHTML = `<div class="who">${esc(c.customer_name||'Mahira Fuels customer')}</div><div class="qr"></div>
+        <div class="code">${esc(c.code)}</div><div>KSh ${c.amount} off · until ${new Date(c.expires_at).toLocaleDateString('en-GB')}</div>
+        <small>${esc(linkFor(c.code))}</small>
+        <div class="noprint" style="margin-top:6px"><button class="btn small dark" type="button">Copy WhatsApp text</button></div>`;
+      grid.appendChild(el);
+      new QRCode(el.querySelector('.qr'),{text:linkFor(c.code),width:150,height:150,correctLevel:QRCode.CorrectLevel.M});
+      el.querySelector('button').onclick = () => navigator.clipboard.writeText(waText(c));
+    }
+    $('qrCard').style.display='block';
+    loadCodes();
+  }catch(e){ $('genMsg').textContent = e.message; }
+}
+
+/* ---------- Customers ---------- */
+async function loadCustomers(){
+  ({customers: CUSTOMERS} = await api('customers'));
+  renderCustomers();
+}
+function renderCustomers(){
+  const due = $('dueOnly').checked, now = Date.now();
+  const rows = CUSTOMERS.filter(c => !due || (now - new Date(c.last_order_at)) > 30*864e5);
+  $('custTbl').tBodies[0].innerHTML = rows.map(c => {
+    const days = Math.floor((now - new Date(c.last_order_at))/864e5);
+    return `<tr><td>${esc(c.name||'—')}</td><td><a href="tel:+${esc(c.phone)}">${esc(c.phone)}</a></td><td>${c.orders_count}</td><td>${ksh(c.total_spent)}</td>
+      <td>${new Date(c.last_order_at).toLocaleDateString('en-GB')} <small>(${days}d ago)</small></td>
+      <td><button class="btn small green" onclick="sendCode('${esc(c.phone)}','${esc((c.name||'').replace(/'/g,''))}')">Code + WhatsApp</button></td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="hint">No customers yet.</td></tr>';
+}
+async function sendCode(phone, name){
+  try{
+    const d = await api('codes','POST', name ? {name, amount:50, days:30} : {count:1, amount:50, days:30});
+    const c = d.codes[0];
+    window.open('https://wa.me/'+phone+'?text='+encodeURIComponent(waText(c)), '_blank');
+    loadCodes();
+  }catch(e){ alert(e.message); }
+}
+
+function loadAll(){ loadOrders(); loadStock(); loadCodes(); loadCustomers(); }
+$('loginBtn').onclick = login;
+$('key').addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+$('genBtn').onclick = generate;
+$('printBtn').onclick = () => window.print();
+$('refreshOrders').onclick = loadOrders;
+$('dueOnly').onchange = renderCustomers;
+setInterval(() => { if (KEY && !$('app').classList.contains('hidden')) loadOrders().catch(()=>{}); }, 20000);
+if (KEY){ login(); }
+</script>
+</body>
+</html>

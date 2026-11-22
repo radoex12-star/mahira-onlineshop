@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mahira Fuels — Order Gas Refill</title>
+<meta name="theme-color" content="#de0f11">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="stylesheet" href="/style.css">
+<style>
+  .myorder{display:block;background:#fff;border:2px solid var(--green);border-radius:14px;padding:12px 14px;margin-bottom:14px;text-align:center;font-weight:800;color:var(--ink);text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .myorder small{display:block;font-weight:700;color:var(--green)}
+  .offers{margin-bottom:14px}
+  .offer{background:var(--yellow);color:#1c1c1c;border-radius:14px;padding:11px 14px;font-weight:800;text-align:center;margin-bottom:8px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .offer small{display:block;font-weight:700;font-size:12px;color:#5a3a00}
+  .offer s{opacity:.6;font-weight:700}
+  .hello{display:none;background:#fff;border:2px solid var(--yellow);border-radius:16px;padding:14px;text-align:center;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .hello h1{margin:0;font-size:24px;font-weight:900;color:var(--red)}
+  .hello h1 em{font-style:normal;color:#1c1c1c}
+  .hello p{margin:4px 0 0;font-size:14px;color:var(--green);font-weight:700}
+
+  .brands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .brand{position:relative;border:2px solid var(--line);border-radius:14px;padding:12px 4px 8px;text-align:center;background:#fff;cursor:pointer;font:inherit;color:inherit}
+  .brand svg{width:52px;height:64px}
+  .brand .n{font-weight:800;font-size:13px;margin-top:2px}
+  .brand .p{font-size:13px;color:var(--muted)}
+  .brand .p b{color:var(--red);font-size:15px}
+  .brand .p s{display:block;font-size:12px;line-height:1.1}
+  .brand .s{font-size:12px;font-weight:700;margin-top:3px;color:var(--green)}
+  .brand.sel{border-color:var(--red);background:#fff4f4}
+  .brand.low .s{color:#c46a00}
+  .brand.out{opacity:.5;cursor:not-allowed;filter:grayscale(1)}
+  .brand.out .s{color:var(--red)}
+  .tagoffer{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:11px;font-weight:900;padding:2px 9px;border-radius:99px;white-space:nowrap}
+
+  .pay{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .pay button{border:2px solid var(--line);border-radius:12px;padding:14px 6px;font:inherit;font-weight:800;cursor:pointer;background:#fff;color:inherit}
+  .pay button small{display:block;font-weight:600;color:var(--muted);font-size:12px}
+  .pay button.sel{border-color:var(--red);background:#fff4f4}
+  .mpbox{display:none;margin-top:12px;background:#f1faf3;border:1px solid #cfe9d5;border-radius:12px;padding:12px;font-size:14px}
+  .mpbox .row{display:flex;justify-content:space-between;padding:3px 0}
+  .mpbox .row b{font-size:17px;color:var(--red)}
+
+  .codeLink{background:none;border:0;color:var(--red);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
+  #codeBox{display:none;margin-top:10px}
+  .row2{display:flex;gap:8px}
+  .sum{display:flex;justify-content:space-between;padding:4px 0}
+  .sum s{color:var(--muted);margin-right:6px;font-size:14px}
+  .sum.disc{color:var(--green);font-weight:700}
+  .sum.total{font-size:22px;font-weight:900;border-top:2px dashed var(--line);margin-top:6px;padding-top:10px}
+  .note{text-align:center;color:var(--muted);font-size:13px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><img src="/logo.png" alt="Mahira Fuels — Fueling Your Hustle"></header>
+
+  <a class="myorder" id="myOrder" href="#" style="display:none"></a>
+
+  <div class="offers" id="offers"></div>
+
+  <div class="hello" id="hello">
+    <h1 id="helloName">HURRAH!</h1>
+    <p id="helloText"></p>
+  </div>
+
+  <section>
+    <h2><span>1</span>Choose your gas</h2>
+    <div class="brands" id="brands"><div style="grid-column:1/-1;text-align:center;padding:16px;color:var(--muted)">Loading…</div></div>
+  </section>
+
+  <section>
+    <h2><span>2</span>Delivery details</h2>
+    <label class="first" for="name">Your name</label>
+    <input id="name" placeholder="Name" autocomplete="name">
+    <label for="phone">Phone number</label>
+    <input id="phone" type="tel" placeholder="07XX XXX XXX" autocomplete="tel">
+    <div class="hint">We use this number to call you for delivery directions.</div>
+  </section>
+
+  <section>
+    <h2><span>3</span>How will you pay?</h2>
+    <div class="pay">
+      <button type="button" id="payMpesa">M-PESA<small>Pay by Paybill</small></button>
+      <button type="button" id="payCash">Cash<small>On delivery / collection</small></button>
+    </div>
+    <div class="mpbox" id="mpbox">
+      <div class="row"><span>Paybill</span><b>522522</b></div>
+      <div class="row"><span>Account</span><b>1353366</b></div>
+      <div class="row"><span>Amount</span><b id="mpAmount">—</b></div>
+      <label for="mpref">M-PESA confirmation code (from the SMS)</label>
+      <input id="mpref" placeholder="e.g. TKL4ABC123" autocapitalize="characters" autocomplete="off">
+    </div>
+  </section>
+
+  <section>
+    <div class="sum"><span id="sumLabel">Gas refill</span><span id="sumPrice">—</span></div>
+    <div class="sum disc" id="sumDiscRow" style="display:none"><span>Discount code</span><span id="sumDisc"></span></div>
+    <div class="sum total"><span>Total</span><span id="sumTotal">—</span></div>
+    <div style="margin-top:8px"><button class="codeLink" id="codeToggle" type="button">Have a discount code?</button></div>
+    <div id="codeBox">
+      <div class="row2">
+        <input id="code" placeholder="MF-XXXXXX" autocomplete="off" autocapitalize="characters">
+        <button class="btn" id="applyBtn" type="button">Apply</button>
+      </div>
+      <div class="msg" id="codeMsg"></div>
+    </div>
+    <button class="btn big" id="orderBtn" type="button" style="margin-top:14px" disabled>Place order</button>
+    <div class="msg bad" id="orderMsg"></div>
+  </section>
+
+  <div class="note">Fast delivery within 1 hour (Ilasit Town)</div>
+</div>
+
+<script>
+const COLORS = { ola:'#b3361f', afrigas:'#1f5fd1', seagas:'#d62020' };
+const LINES  = { ola:['OLA','ENERGY'], afrigas:['AFRI','GAS'], seagas:['SEA','GAS'] };
+const LOW = 5;
+const S = { products:[], brand:null, discount:0, code:'', pay:null, busy:false };
+const $ = (id) => document.getElementById(id);
+const ksh = (n) => 'KSh ' + Number(n).toLocaleString('en-KE');
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const eff = (p) => p.promo_price != null ? p.promo_price : p.price;
+
+function left(until){
+  if (!until) return 'while stocks last';
+  const m = Math.floor((new Date(until) - Date.now()) / 60000);
+  if (m <= 0) return 'ending now';
+  if (m >= 1440) return 'ends in ' + Math.floor(m/1440) + 'd ' + Math.floor((m%1440)/60) + 'h';
+  if (m >= 60) return 'ends in ' + Math.floor(m/60) + 'h ' + (m%60) + 'm';
+  return 'ends in ' + m + 'm';
+}
+
+function cyl(b){
+  const c = COLORS[b], l = LINES[b];
+  return `<svg viewBox="0 0 64 78" aria-hidden="true"><rect x="20" y="2" width="24" height="9" rx="3" fill="${c}"/>
+  <path d="M10 22Q10 12 20 12H44Q54 12 54 22V60Q54 72 44 72H20Q10 72 10 60Z" fill="${c}"/>
+  <rect x="8" y="70" width="48" height="6" rx="3" fill="${c}" opacity=".85"/>
+  <text x="32" y="38" text-anchor="middle" font-size="9" font-weight="800" fill="#fff" font-family="sans-serif">${l[0]}</text>
+  <text x="32" y="49" text-anchor="middle" font-size="9" font-weight="800" fill="#fff" font-family="sans-serif">${l[1]}</text></svg>`;
+}
+
+function renderOffers(){
+  const live = S.products.filter(p => p.promo_price != null && p.stock > 0);
+  $('offers').innerHTML = live.map(p =>
+    `<div class="offer flash">🔥 ${esc(p.promo_label || 'Special offer')}: ${esc(p.label)} <s>${ksh(p.price)}</s> ${ksh(p.promo_price)}<small>${left(p.promo_until)}</small></div>`
+  ).join('');
+}
+
+function renderBrands(){
+  const box = $('brands'); box.innerHTML = '';
+  for (const p of S.products){
+    const out = p.stock <= 0, low = !out && p.stock <= LOW, promo = p.promo_price != null && !out;
+    const b = document.createElement('button');
+    b.type = 'button'; b.disabled = out;
+    b.className = 'brand' + (S.brand===p.brand?' sel':'') + (out?' out':'') + (low?' low':'');
+    b.innerHTML = (promo ? '<div class="tagoffer flash">OFFER</div>' : '') + cyl(p.brand) +
+      `<div class="n">${esc(p.label)}</div>` +
+      `<div class="p">${promo ? '<s>'+ksh(p.price)+'</s><b>'+ksh(p.promo_price)+'</b>' : ksh(p.price)}</div>` +
+      `<div class="s">${out ? 'Out of stock' : low ? 'Only '+p.stock+' left' : p.stock+' in stock'}</div>`;
+    b.onclick = () => { S.brand = p.brand; renderBrands(); update(); };
+    box.appendChild(b);
+  }
+}
+
+async function loadStock(){
+  try{
+    const d = await (await fetch('/api/stock')).json();
+    if (d.products){
+      S.products = d.products;
+      const sel = S.products.find(p => p.brand===S.brand);
+      if (sel && sel.stock <= 0) S.brand = null;
+      renderOffers(); renderBrands(); update();
+    }
+  }catch(e){}
+}
+
+function update(){
+  const p = S.products.find(x => x.brand===S.brand);
+  const price = p ? eff(p) : null;
+  const disc = p ? Math.min(S.discount, price) : S.discount;
+  const total = p ? price - disc : null;
+  $('sumLabel').textContent = p ? p.label : 'Gas refill';
+  $('sumPrice').innerHTML = !p ? '—' : (p.promo_price != null ? '<s>'+ksh(p.price)+'</s>' : '') + ksh(price);
+  $('sumDiscRow').style.display = S.discount ? 'flex' : 'none';
+  $('sumDisc').textContent = '−' + ksh(disc);
+  $('sumTotal').textContent = total===null ? '—' : ksh(total);
+  $('mpAmount').textContent = total===null ? '—' : ksh(total);
+  $('orderBtn').disabled = S.busy || !p || !S.pay;
+}
+
+function showHello(name, amount, expires){
+  $('hello').style.display = 'block';
+  $('helloName').innerHTML = name ? 'HURRAH, <em>'+esc(name.toUpperCase())+'</em>!' : 'HURRAH!';
+  let t = 'Your KSh '+amount+' discount is applied';
+  if (expires) t += ' — valid until ' + new Date(expires).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  $('helloText').textContent = t + '.';
+}
+
+async function applyCode(){
+  const code = $('code').value.trim(), msg = $('codeMsg');
+  if (!code){ msg.className='msg bad'; msg.textContent='Enter your code.'; return; }
+  msg.className='msg'; msg.textContent='Checking…';
+  try{
+    const d = await (await fetch('/api/validate-code',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code})})).json();
+    if (d.ok){
+      S.discount = d.amount; S.code = code.toUpperCase();
+      msg.className='msg ok'; msg.textContent='Discount applied.';
+      if (d.name && !$('name').value) $('name').value = d.name;
+      showHello(d.name, d.amount, d.expires_at);
+    }else{
+      S.discount = 0; S.code = ''; $('hello').style.display='none';
+      msg.className='msg bad'; msg.textContent = d.error || 'Code not valid.';
+    }
+  }catch(e){ msg.className='msg bad'; msg.textContent='Network problem. Try again.'; }
+  update();
+}
+
+function setPay(m){
+  S.pay = m;
+  $('payMpesa').classList.toggle('sel', m==='mpesa');
+  $('payCash').classList.toggle('sel', m==='cash');
+  $('mpbox').style.display = m==='mpesa' ? 'block' : 'none';
+  update();
+}
+
+async function placeOrder(){
+  const msg = $('orderMsg'), phone = $('phone').value.trim();
+  msg.textContent = '';
+  if (!S.brand) return void (msg.textContent = 'Please choose your gas.');
+  if (!phone) return void (msg.textContent = 'Please enter your phone number.');
+  if (S.pay==='mpesa' && !$('mpref').value.trim()) return void (msg.textContent = 'Pay first, then enter the M-PESA confirmation code.');
+  S.busy = true; update(); $('orderBtn').textContent = 'Placing order…';
+  try{
+    const d = await (await fetch('/api/order',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+      brand:S.brand, name:$('name').value, phone, code:S.code, payment_method:S.pay, mpesa_ref:$('mpref').value
+    })})).json();
+    if (d.ok){
+      try{
+        localStorage.setItem('mf_last', d.track_token);
+        localStorage.setItem('mf_cust', JSON.stringify({name:$('name').value.trim(), phone}));
+      }catch(e){}
+      location.href = '/track.html?t=' + encodeURIComponent(d.track_token) + '&new=1'; return;
+    }
+    msg.textContent = d.error || 'Could not place the order.';
+    if (d.reason==='out_of_stock') S.brand = null;
+    if (d.reason && (d.reason.startsWith('code_') || d.reason==='invalid_code')){ S.discount=0; S.code=''; $('hello').style.display='none'; }
+    await loadStock();
+  }catch(e){ msg.textContent = 'Network problem. Please try again.'; }
+  S.busy = false; $('orderBtn').textContent = 'Place order'; update();
+}
+
+$('payMpesa').onclick = () => setPay('mpesa');
+$('payCash').onclick = () => setPay('cash');
+$('orderBtn').onclick = placeOrder;
+$('applyBtn').onclick = applyCode;
+$('code').addEventListener('keydown', e => { if (e.key==='Enter') applyCode(); });
+$('codeToggle').onclick = () => { const b=$('codeBox'); b.style.display = b.style.display==='block' ? 'none':'block'; };
+
+// Link from WhatsApp / QR: ?code=MF-XXXXXX — the discount is applied automatically,
+// and the customer's name comes from the code itself (checked on the server).
+const urlCode = new URLSearchParams(location.search).get('code');
+if (urlCode){ $('code').value = urlCode.toUpperCase(); $('codeBox').style.display='block'; applyCode(); }
+
+// Remember this phone's last details and any order still on its way
+try{
+  const c = JSON.parse(localStorage.getItem('mf_cust') || 'null');
+  if (c){ if (c.name && !$('name').value) $('name').value = c.name; if (c.phone) $('phone').value = c.phone; }
+}catch(e){}
+(async function showMyOrder(){
+  let t = null; try{ t = localStorage.getItem('mf_last'); }catch(e){}
+  if (!t) return;
+  try{
+    const r = await fetch('/api/track?t=' + encodeURIComponent(t));
+    if (!r.ok) return;
+    const o = await r.json();
+    if (o.status === 'in_progress' || o.status === 'on_the_way'){
+      const a = $('myOrder');
+      a.href = '/track.html?t=' + encodeURIComponent(t);
+      a.innerHTML = 'Your order #' + o.id + ' is ' + (o.status === 'on_the_way' ? 'on the way' : 'in progress') + '<small>Tap to track it</small>';
+      a.style.display = 'block';
+    }else{
+      try{ localStorage.removeItem('mf_last'); }catch(e){}
+    }
+  }catch(e){}
+})();
+
+loadStock();
+setInterval(loadStock, 30000);
+</script>
+</body>
+</html>
